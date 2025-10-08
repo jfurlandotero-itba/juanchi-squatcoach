@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PoseLandmarker - Video Demo</title>
+    <style>
+      body {
+        background: #111;
+        color: #eee;
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      video, canvas {
+        width: 640px;
+        height: 360px;
+        border-radius: 10px;
+        margin-top: 10px;
+      }
+      button {
+        margin-top: 15px;
+        padding: 10px 20px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #45a049;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>PoseLandmarker Demo - Video Pregrabado</h1>
+
+    <!-- El video pregrabado -->
+    <div>
+      <label for="videoUpload">Seleccionar video pregrabado:</label>
+      <input type="file" id="videoUpload" accept="video/*" />
+    </div>
+
+    <video id="video" controls playsinline loop></video>
+
+    <script>
+      const upload = document.getElementById('videoUpload');
+      const videoEl = document.getElementById('video');
+
+      upload.addEventListener('change', () => {
+        const file = upload.files && upload.files[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        videoEl.loop = true;
+        videoEl.src = url;
+        videoEl.load();
+        videoEl.play().catch(()=>{});
+        videoEl.addEventListener('loadeddata', () => URL.revokeObjectURL(url), { once: true });
+      });
+    </script>
+
+    <!-- Canvas donde dibujamos los landmarks -->
+    <canvas id="output"></canvas>
+
+    <button id="analyzeBtn">Analizar Video</button>
+
+    <script type="module">
+      import {
+        FilesetResolver,
+        PoseLandmarker
+      } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
+
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("output");
+      const ctx = canvas.getContext("2d");
+      const analyzeBtn = document.getElementById("analyzeBtn");
+
+      let poseLandmarker;
+      let lastVideoTime = -1;
+      let running = false;
+
+      async function init() {
+        // Cargar el modelo de MediaPipe
+        const vision = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+        );
+
+        poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "./pose_landmarker_lite.task"
+          },
+          runningMode: "VIDEO",
+          numPoses: 1
+        });
+      }
+
+      async function analyzeVideo() {
+        if (!poseLandmarker) return alert("El modelo aún no está listo.");
+        if (running) return;
+
+        running = true;
+        analyzeBtn.textContent = "Procesando...";
+
+        function renderLoop() {
+          if (video.paused || video.ended) {
+            running = false;
+            analyzeBtn.textContent = "Analizar Video";
+            return;
+          }
+
+          if (video.currentTime !== lastVideoTime) {
+            const results = poseLandmarker.detectForVideo(video, performance.now());
+            drawResults(results);
+            lastVideoTime = video.currentTime;
+          }
+
+          requestAnimationFrame(renderLoop);
+        }
+
+        renderLoop();
+      }
+
+      function drawResults(result) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        if (!result || !result.landmarks) return;
+
+        for (const landmarks of result.landmarks) {
+          for (const lm of landmarks) {
+            ctx.beginPath();
+            ctx.arc(lm.x * canvas.width, lm.y * canvas.height, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = "rgba(0, 255, 0, 0.8)";
+            ctx.fill();
+          }
+        }
+      }
+
+      analyzeBtn.addEventListener("click", analyzeVideo);
+
+      init();
+    </script>
+  </body>
+</html>
