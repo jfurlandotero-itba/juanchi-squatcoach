@@ -36,94 +36,65 @@
   <body>
     <h1>PoseLandmarker Demo - Video Pregrabado</h1>
 
-    <!-- El video pregrabado -->
     <div>
       <label for="videoUpload">Seleccionar video pregrabado:</label>
       <input type="file" id="videoUpload" accept="video/*" />
     </div>
 
-    <video id="video" controls playsinline loop></video>
-
-    <script>
-      const upload = document.getElementById('videoUpload');
-      const videoEl = document.getElementById('video');
-
-      upload.addEventListener('change', () => {
-        const file = upload.files && upload.files[0];
-        if (!file) return;
-        const url = URL.createObjectURL(file);
-        videoEl.loop = true;
-        videoEl.src = url;
-        videoEl.load();
-        videoEl.play().catch(()=>{});
-        videoEl.addEventListener('loadeddata', () => URL.revokeObjectURL(url), { once: true });
-      });
-    </script>
-
-    <!-- Canvas donde dibujamos los landmarks -->
+    <video id="video" controls playsinline></video>
     <canvas id="output"></canvas>
 
-    <button id="analyzeBtn">Analizar Video</button>
-
     <script type="module">
-      import {
-        FilesetResolver,
-        PoseLandmarker
-      } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
+      import { FilesetResolver, PoseLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
 
       const video = document.getElementById("video");
       const canvas = document.getElementById("output");
       const ctx = canvas.getContext("2d");
-      const analyzeBtn = document.getElementById("analyzeBtn");
 
-      let poseLandmarker;
+      let poseLandmarker = false;
       let lastVideoTime = -1;
       let running = false;
+      const csvData = [];
 
+      // Inicializar modelo
       async function init() {
-        // Cargar el modelo de MediaPipe
         const vision = await FilesetResolver.forVisionTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
         );
 
         poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath: "./pose_landmarker_lite.task"
-          },
+          baseOptions: { modelAssetPath: "./pose_landmarker_lite.task" },
           runningMode: "VIDEO",
           numPoses: 1
         });
       }
 
-      async function analyzeVideo() {
-        if (!poseLandmarker) return alert("El modelo aún no está listo.");
-        if (running) return;
+      // Guardar landmarks en csvData
+      function saveResultsToCSV(result) {
+        if (!result || !result.landmarks) return;
 
-        running = true;
-        analyzeBtn.textContent = "Procesando...";
+        result.landmarks.forEach((landmarks, poseIndex) => {
+          const row = [];
+          row.push(video.currentTime.toFixed(3));
+          row.push(poseIndex);
 
-        function renderLoop() {
-          if (video.paused || video.ended) {
-            running = false;
-            analyzeBtn.textContent = "Analizar Video";
-            return;
-          }
+          landmarks.forEach(lm => {
+            row.push(lm.x.toFixed(5));
+            row.push(lm.y.toFixed(5));
+            row.push(lm.z ? lm.z.toFixed(5) : 0);
+            row.push(lm.visibility ? lm.visibility.toFixed(5) : 0);
+          });
 
-          if (video.currentTime !== lastVideoTime) {
-            const results = poseLandmarker.detectForVideo(video, performance.now());
-            drawResults(results);
-            lastVideoTime = video.currentTime;
-          }
-
-          requestAnimationFrame(renderLoop);
-        }
-
-        renderLoop();
+          csvData.push(row);
+        });
       }
 
+      // Dibujar landmarks
       function drawResults(result) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         if (!result || !result.landmarks) return;
+
+        saveResultsToCSV(result);
 
         for (const landmarks of result.landmarks) {
           for (const lm of landmarks) {
@@ -135,7 +106,65 @@
         }
       }
 
-      analyzeBtn.addEventListener("click", analyzeVideo);
+      // Loop de detección
+      function renderLoop() {
+        if (video.paused || video.ended) {
+          running = false;
+          return;
+        }
+
+        if (video.videoWidth > 0 && video.videoHeight > 0 && video.currentTime !== lastVideoTime) {
+          const results = poseLandmarker.detectForVideo(video, performance.now());
+          drawResults(results);
+          lastVideoTime = video.currentTime;
+        }
+
+        requestAnimationFrame(renderLoop);
+      }
+
+      // Descargar CSV acumulado
+      const downloadBtn = document.createElement("button");
+      downloadBtn.textContent = "Descargar CSV";
+      document.body.appendChild(downloadBtn);
+
+      downloadBtn.addEventListener("click", () => {
+        if (!csvData.length) return alert("No hay datos para exportar.");
+
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvData.forEach(row => {
+          csvContent += row.join(",") + "\r\n";
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "pose_landmarks.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+
+      // Iniciar detección automáticamente al reproducir
+      video.addEventListener("loadeddata", () => {
+        console.log(poseLandmarker, running);
+        if (!poseLandmarker) return;
+        if (running) return;
+        running = true;
+        renderLoop();
+      });
+
+      // Cargar video
+      const upload = document.getElementById('videoUpload');
+      upload.addEventListener('change', () => {
+        const file = upload.files && upload.files[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        video.loop = false;
+        video.src = url;
+        video.load();
+        video.play().catch(()=>{});
+        video.addEventListener('loadeddata', () => URL.revokeObjectURL(url), { once: true });
+      });
 
       init();
     </script>
