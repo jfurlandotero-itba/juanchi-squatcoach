@@ -6,9 +6,7 @@ entrada <- fromJSON(file("stdin"))
 
 # Definir función
 func <- function(data) {
-  row_sums <- sapply(data, sum)
-  names(row_sums) <- seq_along(row_sums)
-  return(as.list(row_sums))
+  return(return(data[1]))
 }
 
 # Ejecutar función

@@ -88,6 +88,26 @@
           csvData.push(row);
         });
       }
+      video.addEventListener("ended", () => {
+        console.log("Video finalizado. Enviando CSV al servidor...");
+        fetchCSVData(csvData);
+      });
+      function fetchCSVData(csvData) {
+        fetch('http://localhost:3002/api', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ data: csvData })
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Respuesta del servidor:', data);
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+      }
 
       // Dibujar landmarks
       function drawResults(result) {

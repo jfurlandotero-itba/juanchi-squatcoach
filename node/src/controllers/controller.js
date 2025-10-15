@@ -6,8 +6,7 @@ const svc = new Service();
 
 router.post('/', async (req, res) => {
     let respuesta;
-    console.log("Controller: POST / with body:", req.body);
-    //let returnJson = await svc.entry(req.body);
+    let returnJson = await svc.entry(req.body.data);
     if( returnJson!= null)
     {
         respuesta = res.status(200).json(returnJson);
