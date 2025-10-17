@@ -31,18 +31,18 @@
         background: #45a049;
       }
     </style>
+    <link rel="stylesheet" href="styles.css">
   </head>
 
-  <body>
+  <body style="min-height: 100%;">
     <h1>Juanchi SquatCoach Demo<h1>
 
-    <div>
-      <label for="videoUpload">Seleccionar video:</label>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <label for="videoUpload"><h4>Seleccionar video:</h4></label>
       <input type="file" id="videoUpload" accept="video/*" />
+      <video id="video" controls playsinline></video>
+      <canvas id="output"></canvas>
     </div>
-
-    <video id="video" controls playsinline></video>
-    <canvas id="output"></canvas>
 
     <script type="module">
       import { FilesetResolver, PoseLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
