@@ -6,8 +6,12 @@ entrada <- fromJSON(file("stdin"))
 
 # Definir función
 func <- function(data) {
-  return(return(data[1]))
-}
+  result <- numeric(nrow(data))
+  for (fila in 1:nrow(data)) {
+    result[fila] <- data[fila,1]
+  }
+  return(result)
+  }
 
 # Ejecutar función
 resultado <- func(entrada$valor)

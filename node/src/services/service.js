@@ -15,15 +15,10 @@ const rPath = process.env.RSCRIPT_PATH;
 export default class Service {
   entry = async (data) => {
     let resultArray = [];
-    //Calculo por frame 
-    for (const frame of data) {
-      console.log("Processing frame:", frame[0]);
-      try {
-        const result = await this.execR(frame);
-        resultArray.push(result);
-      } catch (err) {
-        console.error("Error en frame", frame[0], err);
-      }
+    try {
+      resultArray = await this.execR(data);
+    } catch (err) {
+      console.error("Error al ejecutar R:", err);
     }
     return (resultArray);
   }
