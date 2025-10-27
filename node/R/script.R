@@ -7,8 +7,7 @@ entrada  <-  fromJSON(file("stdin"))
 # Definir función
 func  <-  function(dataframe) {
 
-
-# Cada  vec tiene n filas, donde n es la cantidad de frames en el dataframe
+#Cada  vec tiene n filas, donde n es la cantidad de frames en el dataframe
 vec_timestamps  <-  numeric(nrow(dataframe))
 vec_espalda_cuello  <-  numeric(nrow(dataframe))
 vec_mirada  <-  numeric(nrow(dataframe))
@@ -72,49 +71,78 @@ y31  <-  128
 z31  <-  129
 
 #Funcion compracion tolerancia
-comparar <- function(relacion, tolerancia, frame, vector, suma) {
-  #if (relacion > tolerancia) {
-  #  vector[frame]  <-  1
-  #  suma <- suma + 1
-  #} else {
-  #  vector[frame]  <-  0
-  #}
+comparar <- function(relacion, tolerancia, frame_num, vec, suma) {
+  if (relacion > tolerancia) {
+    vec[frame_num]  <-  1
+    suma <- suma + 1
+  } else {
+    vec[frame_num]  <-  0
+  }
+  return(list(vec = vec, suma = suma))
 }
 
-data <- NULL
+#Matriz de Numericos
+numeric_vec <- numeric(nrow(dataframe) * ncol(dataframe))  # tamaño total
+index <- 1
 
 # Ejecucion de las reglas por frame
 for (fila in 1:nrow(dataframe)) {
-  pos <- function(coord){
-    #return(dataframe[frame, coord])
-    if(vec_debug[fila] == 0  || is.na(vec_debug[fila])) {
-      vec_debug[fila] <- dataframe[fila, coord]
-    }
-    return(1)
+
+  for (col in 1:ncol(dataframe)) {
+    # Convertir cada valor a numeric y guardarlo en numeric_vec
+    numeric_vec[index] <- as.numeric(dataframe[fila, col])
+    index <- index + 1
   }
-  data <- fila
-  vec_timestamps[fila]  <-  dataframe[fila, 1]
-  m_espalda <- pos(y23) - pos(y11) / pos(x23) - pos(x11)
+
+  pos <- function(coord){
+    return(numeric_vec[coord])
+  }
+  vec_timestamps[fila]  <-  numeric_vec[1]
+
+  m_espalda <- (pos(y23) - pos(y11)) / (pos(x23) - pos(x11))
   m_cuello <- (pos(y11) - pos(y7)) / (pos(x11) - pos(x7))
-  comparar(abs(m_espalda - m_cuello), 0, fila, vec_espalda_cuello, sum_espalda_cuello)
-  comparar(abs(pos(y2) - pos(y7)), 0, fila, vec_mirada, sum_mirada)
-  comparar(pos(y25) - pos(y23), 0, fila, vec_profunda, sum_profunda)
-  comparar(pos(x11) - pos(x25), 0, fila, vec_inclinacion, sum_inclinacion)
-  comparar(pos(x15) - pos(x11), 0, fila, vec_manos_hombros, sum_manos_hombros)
-  comparar(pos(x13) - pos(x15), 0, fila, vec_manos_codos, sum_manos_codos)
-  comparar(pos(y11) - pos(y13), 0, fila, vec_manos_pendiente, sum_manos_pendiente)
-  comparar(abs(pos(y31) - pos(y29)), 0, fila, vec_pies, sum_pies)
+  res <- comparar(abs(m_espalda - m_cuello), 0, fila, vec_espalda_cuello,  sum_espalda_cuello)
+  vec_espalda_cuello <- res$vec
+  sum_espalda_cuello <- res$suma
+
+  res <- comparar(abs(pos(y2) - pos(y7)),    0, fila, vec_mirada,          sum_mirada)
+  vec_mirada <- res$vec
+  sum_mirada <- res$suma
+
+  res <- comparar(pos(y25) - pos(y23),       0, fila, vec_profunda,        sum_profunda)
+  vec_profunda <- res$vec
+  sum_profunda <- res$suma
+
+  res <- comparar(pos(x11) - pos(x25),       0, fila, vec_inclinacion,     sum_inclinacion)
+  vec_inclinacion <- res$vec
+  sum_inclinacion <- res$suma
+
+  res <- comparar(pos(x15) - pos(x11),       0, fila, vec_manos_hombros,   sum_manos_hombros)
+  vec_manos_hombros <- res$vec
+  sum_manos_hombros <- res$suma
+
+  res <- comparar(pos(x13) - pos(x15),       0, fila, vec_manos_codos,     sum_manos_codos)
+  vec_manos_codos <- res$vec
+  sum_manos_codos <- res$suma
+
+  res <- comparar(pos(y11) - pos(y13),       0, fila, vec_manos_pendiente, sum_manos_pendiente)
+  vec_manos_pendiente <- res$vec
+  sum_manos_pendiente <- res$suma
+
+  res <- comparar(abs(pos(y31) - pos(y29)),  0, fila, vec_pies, sum_pies)
+  vec_pies <- res$vec
+  sum_pies <- res$suma
 }
 
 #Determinaciones
 
 determinar <- function(index, suma, tolerancia) {
   if(suma > tolerancia) {
-    vec_errores[index] <- 1
+    vec_errores[index] <<- 1
   }
 }
 
-# Mensajes de salida de problemas
+#Mensajes de salida de problemas
 determinar(index_espalda_cuello, sum_espalda_cuello, 0)
 #cat(“Se detectó un problema en la marca de tiempo { vec_timestamps[frame]}: No encorves el cuello, alinea tu cuello y tu columna.”)
 
@@ -139,7 +167,8 @@ determinar(index_manos_pendiente, sum_manos_pendiente, 0)
 determinar(index_pies, sum_pies, 0)
 #cat(“Se detectó un problema en la marca de tiempo { vec_timestamps[frame]}: Mantén los pies planos y bien apoyados en el suelo.”)
 
-return(vec_debug)
+library(jsonlite)
+return(toJSON(vec_errores))
 }
 
 # Ejecutar función
