@@ -17,7 +17,7 @@ vec_manos_hombros  <-  numeric(nrow(dataframe))
 vec_manos_codos  <-  numeric(nrow(dataframe))
 vec_manos_pendiente  <-  numeric(nrow(dataframe))
 vec_pies  <-  numeric(nrow(dataframe))
-vec_errores <- numeric(8)
+vec_errores <- numeric(9) # 1: espalda-cuello, 2: mirada, 3: profunda, 4: inclinacion, 5: manos-hombros, 6: manos-codos, 7: manos-pendiente, 8: pies, 9: inicio encorvado
 vec_debug <- numeric(nrow(dataframe))
 
 #Sumas de cantidad de errores
@@ -71,19 +71,24 @@ y31  <-  128
 z31  <-  129
 
 #Funcion compracion tolerancia
-comparar <- function(relacion, tolerancia, frame_num, vec, suma) {
+comparar <- function(relacion, tolerancia) {
+  ret <- 0
   if (relacion > tolerancia) {
-    vec[frame_num]  <-  1
-    suma <- suma + 1
-  } else {
-    vec[frame_num]  <-  0
+    ret <-  1
   }
-  return(list(vec = vec, suma = suma))
+  return(ret)
+}
+pos <- function(coord){
+  return(numeric_vec[coord])
 }
 
 #Matriz de Numericos
 numeric_vec <- numeric(nrow(dataframe) * ncol(dataframe))  # tamaño total
 index <- 1
+
+# Ejecucion del frame inicial
+res <- comparar(abs(pos(x11) - pos(x23)), 0)
+  vec_errores[9] <- res
 
 # Ejecucion de las reglas por frame
 for (fila in 1:nrow(dataframe)) {
@@ -93,45 +98,41 @@ for (fila in 1:nrow(dataframe)) {
     numeric_vec[index] <- as.numeric(dataframe[fila, col])
     index <- index + 1
   }
-
-  pos <- function(coord){
-    return(numeric_vec[coord])
-  }
   vec_timestamps[fila]  <-  numeric_vec[1]
 
   m_espalda <- (pos(y23) - pos(y11)) / (pos(x23) - pos(x11))
   m_cuello <- (pos(y11) - pos(y7)) / (pos(x11) - pos(x7))
-  res <- comparar(abs(m_espalda - m_cuello), 0, fila, vec_espalda_cuello,  sum_espalda_cuello)
-  vec_espalda_cuello <- res$vec
-  sum_espalda_cuello <- res$suma
+  res <- comparar(abs(m_espalda - m_cuello), 1)
+  vec_espalda_cuello[fila] <- res
+  sum_espalda_cuello <- sum_espalda_cuello + res
 
-  res <- comparar(abs(pos(y2) - pos(y7)),    0, fila, vec_mirada,          sum_mirada)
-  vec_mirada <- res$vec
-  sum_mirada <- res$suma
+  res <- comparar(abs(pos(y2) - pos(y7)), 1)
+  vec_mirada[fila] <- res
+  sum_mirada <- sum_mirada + res
 
-  res <- comparar(pos(y25) - pos(y23),       0, fila, vec_profunda,        sum_profunda)
-  vec_profunda <- res$vec
-  sum_profunda <- res$suma
+  res <- comparar(pos(y25) - pos(y23), 1)
+  vec_profunda[fila] <- res
+  sum_profunda <- sum_profunda + res
 
-  res <- comparar(pos(x11) - pos(x25),       0, fila, vec_inclinacion,     sum_inclinacion)
-  vec_inclinacion <- res$vec
-  sum_inclinacion <- res$suma
+  res <- comparar(pos(x11) - pos(x25), 1)
+  vec_inclinacion[fila] <- res
+  sum_inclinacion <- sum_inclinacion + res
 
-  res <- comparar(pos(x15) - pos(x11),       0, fila, vec_manos_hombros,   sum_manos_hombros)
-  vec_manos_hombros <- res$vec
-  sum_manos_hombros <- res$suma
+  res <- comparar(pos(x15) - pos(x11), 1)
+  vec_manos_hombros[fila] <- res
+  sum_manos_hombros <- sum_manos_hombros + res
 
-  res <- comparar(pos(x13) - pos(x15),       0, fila, vec_manos_codos,     sum_manos_codos)
-  vec_manos_codos <- res$vec
-  sum_manos_codos <- res$suma
+  res <- comparar(pos(x13) - pos(x15), 1)
+  vec_manos_codos[fila] <- res
+  sum_manos_codos <- sum_manos_codos + res
 
-  res <- comparar(pos(y11) - pos(y13),       0, fila, vec_manos_pendiente, sum_manos_pendiente)
-  vec_manos_pendiente <- res$vec
-  sum_manos_pendiente <- res$suma
+  res <- comparar(pos(y13) - pos(y11), 1)
+  vec_manos_pendiente[fila] <- res
+  sum_manos_pendiente <- sum_manos_pendiente + res
 
-  res <- comparar(abs(pos(y31) - pos(y29)),  0, fila, vec_pies, sum_pies)
-  vec_pies <- res$vec
-  sum_pies <- res$suma
+  res <- comparar(abs(pos(y31) - pos(y29)), 1)
+  vec_pies[fila] <- res
+  sum_pies <- sum_pies + res
 }
 
 #Determinaciones
@@ -167,8 +168,23 @@ determinar(index_manos_pendiente, sum_manos_pendiente, 0)
 determinar(index_pies, sum_pies, 0)
 #cat(“Se detectó un problema en la marca de tiempo { vec_timestamps[frame]}: Mantén los pies planos y bien apoyados en el suelo.”)
 
-library(jsonlite)
-return(toJSON(vec_errores))
+# Crear vector de sumas y asignar cada suma a su índice correspondiente
+vec_sumas <- numeric(length(vec_errores))
+vec_sumas[index_mirada] <- sum_mirada
+vec_sumas[index_espalda_cuello] <- sum_espalda_cuello
+vec_sumas[index_profunda] <- sum_profunda
+vec_sumas[index_inclinacion] <- sum_inclinacion
+vec_sumas[index_manos_hombros] <- sum_manos_hombros
+vec_sumas[index_manos_codos] <- sum_manos_codos
+vec_sumas[index_manos_pendiente] <- sum_manos_pendiente
+vec_sumas[index_pies] <- sum_pies
+# Mantener el valor inicial de "inicio encorvado" en la posición 9
+vec_sumas[9] <- vec_errores[9]
+
+# Crear objeto de salida y reasignar a vec_sumas para que el return devuelva el objeto
+vec_res <- list(vec_errores = vec_errores, vec_sumas = vec_sumas)
+
+return(vec_res)
 }
 
 # Ejecutar función
