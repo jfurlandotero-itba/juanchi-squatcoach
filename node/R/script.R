@@ -17,7 +17,8 @@ vec_manos_hombros  <-  numeric(nrow(dataframe))
 vec_manos_codos  <-  numeric(nrow(dataframe))
 vec_manos_pendiente  <-  numeric(nrow(dataframe))
 vec_pies  <-  numeric(nrow(dataframe))
-vec_errores <- numeric(9) # 1: espalda-cuello, 2: mirada, 3: profunda, 4: inclinacion, 5: manos-hombros, 6: manos-codos, 7: manos-pendiente, 8: pies, 9: inicio encorvado
+vec_postura  <-  numeric(nrow(dataframe))
+vec_errores <- numeric(9) # 1: espalda-cuello, 2: mirada, 3: profunda, 4: inclinacion, 5: manos-hombros, 6: manos-codos, 7: manos-pendiente, 8: pies, 9: postura
 vec_debug <- numeric(nrow(dataframe))
 
 #Sumas de cantidad de errores
@@ -29,6 +30,7 @@ sum_manos_hombros <- 0
 sum_manos_codos <- 0
 sum_manos_pendiente <- 0
 sum_pies <- 0
+sum_postura <- 0
 
 
 # Traduccion index vec errores
@@ -40,6 +42,7 @@ index_manos_hombros <- 5
 index_manos_codos <- 6
 index_manos_pendiente <- 7
 index_pies <- 8
+index_postura <- 9
 
 # Traduccion de coordenadas de los nodos
 x2  <-  11
@@ -70,7 +73,7 @@ x31  <-  127
 y31  <-  128
 z31  <-  129
 
-#Funcion compracion tolerancia
+#Funcion compracion relacion > tolerancia
 comparar <- function(relacion, tolerancia) {
   ret <- 0
   if (relacion > tolerancia) {
@@ -78,18 +81,13 @@ comparar <- function(relacion, tolerancia) {
   }
   return(ret)
 }
-pos <- function(coord){
-  return(numeric_vec[coord])
-}
+
 
 #Matriz de Numericos
 numeric_vec <- numeric(nrow(dataframe) * ncol(dataframe))  # tamaño total
 index <- 1
 
-# Ejecucion del frame inicial
-res <- comparar(abs(pos(x11) - pos(x23)), 0)
-  vec_errores[9] <- res
-
+debug_var <- 0
 # Ejecucion de las reglas por frame
 for (fila in 1:nrow(dataframe)) {
 
@@ -98,6 +96,16 @@ for (fila in 1:nrow(dataframe)) {
     numeric_vec[index] <- as.numeric(dataframe[fila, col])
     index <- index + 1
   }
+  pos <- function(coord) {
+    return(numeric_vec[coord])
+  }
+  # vec_debug[fila] <- numeric_vec[pos(x13)]
+  
+  # primer frame
+  if(fila == 1) {
+    dist_hombro_cadera <- abs((pos(x11) - pos(x23))**2 + (pos(y11) - pos(y23))**2)
+  }
+
   vec_timestamps[fila]  <-  numeric_vec[1]
 
   m_espalda <- (pos(y23) - pos(y11)) / (pos(x23) - pos(x11))
@@ -122,9 +130,11 @@ for (fila in 1:nrow(dataframe)) {
   vec_manos_hombros[fila] <- res
   sum_manos_hombros <- sum_manos_hombros + res
 
-  res <- comparar(pos(x13) - pos(x15), 1)
-  vec_manos_codos[fila] <- res
-  sum_manos_codos <- sum_manos_codos + res
+  res <- comparar(abs(pos(x13) - pos(x15)), 0.05)
+  if(res == 1 && pos(x13) - pos(x15) < 0) {
+    vec_manos_codos[fila] <- res
+    sum_manos_codos <- sum_manos_codos + res
+  }
 
   res <- comparar(pos(y13) - pos(y11), 1)
   vec_manos_pendiente[fila] <- res
@@ -133,6 +143,15 @@ for (fila in 1:nrow(dataframe)) {
   res <- comparar(abs(pos(y31) - pos(y29)), 1)
   vec_pies[fila] <- res
   sum_pies <- sum_pies + res
+
+  res <- comparar(abs(dist_hombro_cadera - ((pos(x11) - pos(x23))**2 + (pos(y11) - pos(y23))**2)), 0.05)
+  vec_debug[fila] <- dist_hombro_cadera - ((pos(x11) - pos(x23))**2 + (pos(y11) - pos(y23))**2)
+  debug_var <- dist_hombro_cadera
+  vec_postura[fila] <- res
+  sum_postura <- sum_postura + res
+
+  # reset index to 1 for next row
+  index <- 1
 }
 
 #Determinaciones
@@ -168,6 +187,8 @@ determinar(index_manos_pendiente, sum_manos_pendiente, 0)
 determinar(index_pies, sum_pies, 0)
 #cat(“Se detectó un problema en la marca de tiempo { vec_timestamps[frame]}: Mantén los pies planos y bien apoyados en el suelo.”)
 
+determinar(index_postura, sum_postura, 0)
+
 # Crear vector de sumas y asignar cada suma a su índice correspondiente
 vec_sumas <- numeric(length(vec_errores))
 vec_sumas[index_mirada] <- sum_mirada
@@ -178,11 +199,10 @@ vec_sumas[index_manos_hombros] <- sum_manos_hombros
 vec_sumas[index_manos_codos] <- sum_manos_codos
 vec_sumas[index_manos_pendiente] <- sum_manos_pendiente
 vec_sumas[index_pies] <- sum_pies
-# Mantener el valor inicial de "inicio encorvado" en la posición 9
-vec_sumas[9] <- vec_errores[9]
+vec_sumas[index_postura] <- sum_postura
 
 # Crear objeto de salida y reasignar a vec_sumas para que el return devuelva el objeto
-vec_res <- list(vec_errores = vec_errores, vec_sumas = vec_sumas)
+vec_res <- list(vec_errores = vec_errores, vec_sumas = vec_sumas, debug_var = debug_var, vec_debug = vec_debug, numeric_vec = numeric_vec)
 
 return(vec_res)
 }
