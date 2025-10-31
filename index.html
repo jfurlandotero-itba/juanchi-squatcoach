@@ -48,15 +48,19 @@
     <div class="showOnResLoad", style="display: none;">
       <h5>Resultados:</h5>
       <div>
-        <p id="error1" style="display: none;">Mirada</p>
-        <p id="error2" style="display: none;">Espalda-Cuello</p>
-        <p id="error3" style="display: none;">Profunda</p>
-        <p id="error4" style="display: none;">Inclinacion</p>
-        <p id="error5" style="display: none;">Manos-Hombros</p>
-        <p id="error6" style="display: none;">Manos_Codos</p>
-        <p id="error7" style="display: none;">Pendiente</p>
-        <p id="error8" style="display: none;">Pies</p>
-        <p id="error9" style="display: none;">Postura</p>
+        <p class="error1" style="display: none;">- Mantene la mirada hacia adelante</p>
+        <br class="error1">
+        <p class="error2" style="display: none;">- Asegurate de que la sentadilla sea profunda</p>
+        <br class="error2">        
+        <p class="error3" style="display: none;">- No inclines el tronco por delante de las rodillas</p>
+        <br class="error3">
+        <p class="error4" style="display: none;">- Mantené las manos en la barra</p>
+        <br class="error4">
+        <p class="error5" style="display: none;">- Mantené los codos por detras de los hombros</p>
+        <br class="error5">
+        <p class="error6" style="display: none;">- Asegurate de no levantar los talones</p>
+        <br class="error6">
+        <p class="error7" style="display: none;">- Asegurate de manetener la espalda recta</p>
       </div>
     </div>
 
@@ -123,9 +127,10 @@
           els.forEach(el => el.style.display = 'block');
           const arr = (data[0].vec_errores);
           arr.forEach((val, idx) => {
-            const el = document.getElementById(`error${idx + 1}`);
-            if (!el) return;
-            el.style.display = val ? "inline" : "none";
+            const nodes = document.querySelectorAll(`.error${idx + 1}`);
+            nodes.forEach(el => {
+              el.style.display = val ? 'inline' : 'none';
+            });
           });
         })
         .catch((error) => {

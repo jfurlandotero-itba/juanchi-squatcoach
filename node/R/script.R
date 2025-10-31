@@ -9,24 +9,20 @@ func  <-  function(dataframe) {
 
 #Cada  vec tiene n filas, donde n es la cantidad de frames en el dataframe
 vec_timestamps  <-  numeric(nrow(dataframe))
-vec_espalda_cuello  <-  numeric(nrow(dataframe))
 vec_mirada  <-  numeric(nrow(dataframe))
 vec_profunda  <-  numeric(nrow(dataframe))
 vec_inclinacion  <-  numeric(nrow(dataframe))
-vec_manos_hombros  <-  numeric(nrow(dataframe))
 vec_manos_codos  <-  numeric(nrow(dataframe))
 vec_manos_pendiente  <-  numeric(nrow(dataframe))
 vec_pies  <-  numeric(nrow(dataframe))
 vec_postura  <-  numeric(nrow(dataframe))
-vec_errores <- numeric(9) # 1: espalda-cuello, 2: mirada, 3: profunda, 4: inclinacion, 5: manos-hombros, 6: manos-codos, 7: manos-pendiente, 8: pies, 9: postura
+vec_errores <- numeric(7)
 vec_debug <- numeric(nrow(dataframe))
 
 #Sumas de cantidad de errores
-sum_espalda_cuello <- 0
 sum_mirada <- 0
 sum_profunda <- 0
 sum_inclinacion <- 0
-sum_manos_hombros <- 0
 sum_manos_codos <- 0
 sum_manos_pendiente <- 0
 sum_pies <- 0
@@ -35,14 +31,12 @@ sum_postura <- 0
 
 # Traduccion index vec errores
 index_mirada <- 1
-index_espalda_cuello <- 2
-index_profunda <- 3
-index_inclinacion <- 4
-index_manos_hombros <- 5
-index_manos_codos <- 6
-index_manos_pendiente <- 7
-index_pies <- 8
-index_postura <- 9
+index_profunda <- 2
+index_inclinacion <- 3
+index_manos_codos <- 4
+index_manos_pendiente <- 5
+index_pies <- 6
+index_postura <- 7
 
 # Traduccion de coordenadas de los nodos
 x2  <-  11
@@ -74,9 +68,9 @@ y31  <-  128
 z31  <-  129
 
 #Funcion compracion relacion > tolerancia
-comparar <- function(relacion, tolerancia) {
+comparar <- function(mayor, menor) {
   ret <- 0
-  if (relacion > tolerancia) {
+  if (mayor > menor) {
     ret <-  1
   }
   return(ret)
@@ -103,32 +97,25 @@ for (fila in 1:nrow(dataframe)) {
   
   # primer frame
   if(fila == 1) {
-    dist_hombro_cadera <- abs((pos(x11) - pos(x23))**2 + (pos(y11) - pos(y23))**2)
+    dist_hombro_cadera <- abs((pos(x11) - pos(x23))**2 + ((1-(1-pos(y11))) - (1-pos(y23)))**2)
   }
 
   vec_timestamps[fila]  <-  numeric_vec[1]
 
-  m_espalda <- (pos(y23) - pos(y11)) / (pos(x23) - pos(x11))
-  m_cuello <- (pos(y11) - pos(y7)) / (pos(x11) - pos(x7))
-  res <- comparar(abs(m_espalda - m_cuello), 1)
-  vec_espalda_cuello[fila] <- res
-  sum_espalda_cuello <- sum_espalda_cuello + res
+  m_espalda <- ((1-pos(y23)) - (1-pos(y11))) / (pos(x23) - pos(x11))
+  m_cuello <- ((1-pos(y11)) - (1-pos(y7))) / (pos(x11) - pos(x7))
 
-  res <- comparar(abs(pos(y2) - pos(y7)), 1)
+  res <- comparar(abs((1-pos(y2)) - (1-pos(y7))), 0.018)
   vec_mirada[fila] <- res
   sum_mirada <- sum_mirada + res
 
-  res <- comparar(pos(y25) - pos(y23), 1)
+  res <- comparar((1-pos(y25)) - (1-pos(y23)), (-0.01))
   vec_profunda[fila] <- res
   sum_profunda <- sum_profunda + res
 
-  res <- comparar(pos(x11) - pos(x25), 1)
+  res <- comparar((-0.1), pos(x11) - pos(x25))
   vec_inclinacion[fila] <- res
   sum_inclinacion <- sum_inclinacion + res
-
-  res <- comparar(pos(x15) - pos(x11), 1)
-  vec_manos_hombros[fila] <- res
-  sum_manos_hombros <- sum_manos_hombros + res
 
   res <- comparar(abs(pos(x13) - pos(x15)), 0.05)
   if(res == 1 && pos(x13) - pos(x15) < 0) {
@@ -136,19 +123,26 @@ for (fila in 1:nrow(dataframe)) {
     sum_manos_codos <- sum_manos_codos + res
   }
 
-  res <- comparar(pos(y13) - pos(y11), 1)
+  res <- comparar((1-pos(y13)) - (1-pos(y11)), 1) #Codo hombro
   vec_manos_pendiente[fila] <- res
   sum_manos_pendiente <- sum_manos_pendiente + res
 
-  res <- comparar(abs(pos(y31) - pos(y29)), 1)
+  res <- comparar(abs((1-pos(y31)) - (1-pos(y29))), 0.04)
   vec_pies[fila] <- res
   sum_pies <- sum_pies + res
 
-  res <- comparar(abs(dist_hombro_cadera - ((pos(x11) - pos(x23))**2 + (pos(y11) - pos(y23))**2)), 0.05)
-  vec_debug[fila] <- dist_hombro_cadera - ((pos(x11) - pos(x23))**2 + (pos(y11) - pos(y23))**2)
-  debug_var <- dist_hombro_cadera
-  vec_postura[fila] <- res
-  sum_postura <- sum_postura + res
+  m_cadera_hombros <- ((1-pos(y11)) - (1-pos(y23))) / (pos(x11) - pos(x23))
+  m_cadera_oreja <- ((1-pos(y7)) - (1-pos(y23))) / (pos(x7) - pos(x23))
+  if(abs(m_cadera_hombros) < 2 && abs(m_cadera_oreja) < 2) {
+    debug_var <- debug_var + 1
+    res <- comparar((m_cadera_hombros - m_cadera_oreja), 0.2)
+    vec_postura[fila] <- res
+    sum_postura <- sum_postura + res
+  }
+  else{
+    vec_postura[fila] <- 0
+  }
+
 
   # reset index to 1 for next row
   index <- 1
@@ -156,54 +150,52 @@ for (fila in 1:nrow(dataframe)) {
 
 #Determinaciones
 
-determinar <- function(index, suma, tolerancia) {
+determinarFramesErrados <- function(index, suma, tolerancia) {
   if(suma > tolerancia) {
     vec_errores[index] <<- 1
   }
 }
 
-#Mensajes de salida de problemas
-determinar(index_espalda_cuello, sum_espalda_cuello, 0)
-#cat(“Se detectó un problema en la marca de tiempo { vec_timestamps[frame]}: No encorves el cuello, alinea tu cuello y tu columna.”)
+determinarFramesCorrectos <- function(index, suma, tolerancia) {
+  if(suma < tolerancia) {
+    vec_errores[index] <<- 1
+  }
+}
 
-determinar(index_mirada, sum_mirada, 0)
+#Mensajes de salida de problemas
+
+determinarFramesErrados(index_mirada, sum_mirada, 0)
 #cat(“Se detectó un problema en la marca de tiempo { vec_timestamps[frame]}: Mantén la cabeza y la mirada rectas, paralelas al suelo.”)
 
-determinar(index_profunda, sum_profunda, 0)
+determinarFramesCorrectos(index_profunda, sum_profunda, 1)
 #cat(“Se detectó un problema durante el ejercicio: La sentadilla no es profunda. Para hacer una sentadilla profunda debes bajar la cadera por debajo de la altura de las rodillas.”)
 
-determinar(index_inclinacion, sum_inclinacion, 0)
+determinarFramesErrados(index_inclinacion, sum_inclinacion, 0)
 #cat(“Se detectó un problema en la marca de tiempo { vec_timestamps[frame]}: No inclines el tronco por delante de las rodillas.”)
 
-determinar(index_manos_hombros, sum_manos_hombros, 0)
+determinarFramesErrados(index_manos_codos, sum_manos_codos, 0)
 #cat(“Se detectó un problema en la marca de tiempo { vec_timestamps[frame]}: .”)
 
-determinar(index_manos_codos, sum_manos_codos, 0)
+determinarFramesErrados(index_manos_pendiente, sum_manos_pendiente, 0)
 #cat(“Se detectó un problema en la marca de tiempo { vec_timestamps[frame]}: .”)
 
-determinar(index_manos_pendiente, sum_manos_pendiente, 0)
-#cat(“Se detectó un problema en la marca de tiempo { vec_timestamps[frame]}: .”)
-
-determinar(index_pies, sum_pies, 0)
+determinarFramesErrados(index_pies, sum_pies, 0)
 #cat(“Se detectó un problema en la marca de tiempo { vec_timestamps[frame]}: Mantén los pies planos y bien apoyados en el suelo.”)
 
-determinar(index_postura, sum_postura, 0)
+determinarFramesErrados(index_postura, sum_postura, 0)
 
 # Crear vector de sumas y asignar cada suma a su índice correspondiente
 vec_sumas <- numeric(length(vec_errores))
 vec_sumas[index_mirada] <- sum_mirada
-vec_sumas[index_espalda_cuello] <- sum_espalda_cuello
 vec_sumas[index_profunda] <- sum_profunda
 vec_sumas[index_inclinacion] <- sum_inclinacion
-vec_sumas[index_manos_hombros] <- sum_manos_hombros
 vec_sumas[index_manos_codos] <- sum_manos_codos
 vec_sumas[index_manos_pendiente] <- sum_manos_pendiente
 vec_sumas[index_pies] <- sum_pies
 vec_sumas[index_postura] <- sum_postura
 
 # Crear objeto de salida y reasignar a vec_sumas para que el return devuelva el objeto
-vec_res <- list(vec_errores = vec_errores, vec_sumas = vec_sumas, debug_var = debug_var, vec_debug = vec_debug, numeric_vec = numeric_vec)
-
+vec_res <- list(vec_errores = vec_errores, vec_sumas = vec_sumas, debug_var = debug_var)
 return(vec_res)
 }
 

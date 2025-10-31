@@ -54,6 +54,19 @@ export default class Service {
     
     //Output
     console.log("R result:", await rCalc);
+    const result = await rCalc;
+
+    // try {
+    //   const fs = await import("fs/promises");
+    //   const os = await import("os");
+    //   const tmpDir = os.tmpdir();
+    //   const filePath = path.join(tmpDir, `r_result_${Date.now()}.json`);
+    //   await fs.writeFile(filePath, JSON.stringify(result, null, 2), "utf8");
+    //   const notepad = spawn("notepad.exe", [filePath], { detached: true, stdio: "ignore" });
+    //   notepad.unref();
+    // } catch (err) {
+    //   console.error("Error exporting to Notepad:", err);
+    // }
     return await rCalc
   };
 }
