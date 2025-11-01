@@ -129,10 +129,10 @@
           const arr = (data[0].vec_errores);
           arr.forEach((val, idx) => {
             const nodes = document.querySelectorAll(`.error${idx + 1}`);
-            var count = 0;
+            let count = 0;
             nodes.forEach(el => {
               el.style.display = val ? 'inline' : 'none';
-              val && count++;
+              val == 1 && count++;
             });
             if(count == 0){
               const allOk = document.querySelectorAll(`.allOk`);
