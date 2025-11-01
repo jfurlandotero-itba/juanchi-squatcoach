@@ -113,7 +113,7 @@
         fetchCSVData(csvData);
       });
       function fetchCSVData(csvData) {
-        fetch('./netlify/functions/proxy', {
+        fetch('/.netlify/functions/proxy', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
