@@ -134,7 +134,7 @@
               el.style.display = val ? 'inline' : 'none';
               val && count++;
             });
-            if(count < 0){
+            if(count == 0){
               const allOk = document.querySelectorAll(`.allOk`);
               allOk.forEach(el => el.style.display = 'block');
             };
