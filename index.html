@@ -61,6 +61,7 @@
         <p class="error6" style="display: none;">- Asegurate de no levantar los talones</p>
         <br class="error6">
         <p class="error7" style="display: none;">- Asegurate de manetener la espalda recta</p>
+        <p class="allOk" style="display: none;">Perfecto! No se detectaron errores en tu sentadilla</p>
       </div>
     </div>
 
@@ -128,9 +129,15 @@
           const arr = (data[0].vec_errores);
           arr.forEach((val, idx) => {
             const nodes = document.querySelectorAll(`.error${idx + 1}`);
+            var count = 0;
             nodes.forEach(el => {
               el.style.display = val ? 'inline' : 'none';
+              val && count++;
             });
+            if(count < 0){
+              const allOk = document.querySelectorAll(`.allOk`);
+              allOk.forEach(el => el.style.display = 'block');
+            };
           });
         })
         .catch((error) => {

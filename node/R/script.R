@@ -131,17 +131,19 @@ for (fila in 1:nrow(dataframe)) {
   vec_pies[fila] <- res
   sum_pies <- sum_pies + res
 
-  m_cadera_hombros <- ((1-pos(y11)) - (1-pos(y23))) / (pos(x11) - pos(x23))
-  m_cadera_oreja <- ((1-pos(y7)) - (1-pos(y23))) / (pos(x7) - pos(x23))
-  if(abs(m_cadera_hombros) < 2 && abs(m_cadera_oreja) < 2) {
-    debug_var <- debug_var + 1
-    res <- comparar((m_cadera_hombros - m_cadera_oreja), 0.2)
-    vec_postura[fila] <- res
-    sum_postura <- sum_postura + res
-  }
-  else{
-    vec_postura[fila] <- 0
-  }
+  #No implementado por complejidad
+  # m_cadera_hombros <- ((1-pos(y11)) - (1-pos(y23))) / (pos(x11) - pos(x23))
+  # m_cadera_oreja <- ((1-pos(y7)) - (1-pos(y23))) / (pos(x7) - pos(x23))
+  # if(abs(m_cadera_hombros) < 2 && abs(m_cadera_oreja) < 2) {
+  #   debug_var <- debug_var + 1
+  #   res <- comparar((m_cadera_hombros - m_cadera_oreja), 0.2)
+  #   vec_postura[fila] <- res
+  #   sum_postura <- sum_postura + res
+  # }
+  # else{
+  #   vec_postura[fila] <- 0
+  # }
+  vec_postura[fila] <- 0
 
 
   # reset index to 1 for next row
