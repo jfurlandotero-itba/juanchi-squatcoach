@@ -132,15 +132,13 @@
             let count = 0;
             nodes.forEach(el => {
               el.style.display = val ? 'inline' : 'none';
-              console.log(val);
               val == 1 && count++;
             });
-            console.log(count);
+          });
             if(count == 0){
               const allOk = document.querySelectorAll(`.allOk`);
               allOk.forEach(el => el.style.display = 'block');
             };
-          });
         })
         .catch((error) => {
           console.error('Error:', error);
