@@ -127,9 +127,9 @@
           const els = document.querySelectorAll('.showOnResLoad');
           els.forEach(el => el.style.display = 'block');
           const arr = (data[0].vec_errores);
+          let count = 0;
           arr.forEach((val, idx) => {
             const nodes = document.querySelectorAll(`.error${idx + 1}`);
-            let count = 0;
             nodes.forEach(el => {
               el.style.display = val ? 'inline' : 'none';
               val == 1 && count++;
