@@ -2,7 +2,7 @@ exports.handler = async function(event, context) {
   try {
     const body = event.body ? JSON.parse(event.body) : {};
 
-    const response = await fetch("http://growth-figures.gl.at.ply.gg:32241/api", {
+    const response = await fetch("localhost:3002/api", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
